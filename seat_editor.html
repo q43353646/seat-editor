@@ -56,7 +56,10 @@ body {
 }
 .col-left { width: 400px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; min-width: 200px; }
 .col-center { flex: 1; display: flex; flex-direction: column; min-width: 0; padding: 0 10px; }
-.col-right { width: 400px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; min-width: 260px; }
+.col-right { width: 400px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; min-width: 260px; min-height: 0; overflow: hidden; }
+.panel-tabs { display:flex; gap:0; margin-bottom:10px; background:var(--card); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); flex-shrink:0; }
+.panel-tab { flex:1; padding:10px; border:none; background:transparent; font-size:13px; cursor:pointer; color:var(--text-2); border-bottom:2px solid transparent; }
+.panel-tab.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:600; }
 .panel {
   background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
   display: flex; flex-direction: column; overflow: hidden;
@@ -179,8 +182,8 @@ body {
 .seat .seat-meta { font-size: 9px; opacity: .85; line-height: 1.2; }
 .seat.drag-over { outline: 2px dashed var(--primary); outline-offset: 2px; }
 /* ===== 右栏：人员列表 ===== */
-#unseatPanel { flex: 1.2; }
-#seatPersonPanel { flex: 1; }
+#unseatPanel { flex: 1; min-height: 0; }
+#seatPersonPanel { flex: 1; min-height: 0; }
 .search-row { display: flex; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--border); flex-direction: column; gap: 4px; }
 .search-row input {
   padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px;
@@ -198,7 +201,7 @@ table.person-table th { color: var(--text-2); font-weight: 500; background: #FAF
 table.person-table tr { cursor: pointer; }
 table.person-table tbody tr:hover { background: var(--primary-light); }
 table.person-table tbody tr.selected { background: var(--primary-light); }
-.person-list { overflow: auto; flex: 1; }
+.person-list { overflow-y: auto; flex: 1; min-height: 0; }
 .empty-tip { text-align: center; color: #B0B4C2; padding: 30px 0; font-size: 12px; }
 /* ===== 弹窗 ===== */
 .modal-mask {
@@ -349,7 +352,7 @@ table.person-table tbody tr.selected { background: var(--primary-light); }
   <!-- 中栏 -->
   <div class="col-center">
   <div class="panel" id="seatPanel">
-    <div class="panel-head">座位编辑</div>
+    <div class="panel-head">座位编辑 <span id="seatTotalStat" style="margin-left:auto;font-weight:400;color:var(--text-2);font-size:11px"></span></div>
     <div class="seat-toolbar">
       <span style="color:var(--text-2);font-size:12px">座位布局：</span>
       <div class="stepper">
@@ -396,6 +399,11 @@ table.person-table tbody tr.selected { background: var(--primary-light); }
 
   <!-- 右栏 -->
   <div class="col-right">
+    <div class="panel-tabs">
+      <button class="panel-tab active" data-tab="people" onclick="switchRightTab('people')">人员列表</button>
+      <button class="panel-tab" data-tab="auto" onclick="switchRightTab('auto')">自动排座</button>
+    </div>
+    <div id="rightTabPeople" style="display:flex;flex-direction:column;flex:1;min-height:0">
     <div class="panel" id="unseatPanel">
       <div class="panel-head">未入座人员 <span id="unseatCount" style="margin-left:auto;font-weight:400;color:var(--text-2);font-size:11px"></span></div>
       <div class="search-row">
@@ -412,7 +420,7 @@ table.person-table tbody tr.selected { background: var(--primary-light); }
         ondragover="event.preventDefault()"
         ondrop="dropToUnseated(event)">
         <table class="person-table">
-          <thead><tr><th style="width:30px">#</th><th>性质</th><th>公司</th><th>姓名</th><th>职位</th><th>手机号</th><th>车牌</th></tr></thead>
+          <thead><tr><th style="width:30px">#</th><th>集团</th><th>性质</th><th>公司</th><th>姓名</th><th>职位</th><th>手机号</th><th>车牌</th></tr></thead>
           <tbody id="unseatedBody"></tbody>
         </table>
         <div class="empty-tip" id="unseatedEmpty">暂无未入座人员，可将座位上的人员拖到此处释放</div>
@@ -430,11 +438,87 @@ table.person-table tbody tr.selected { background: var(--primary-light); }
       </div>
       <div class="person-list">
         <table class="person-table">
-          <thead><tr><th style="width:30px">#</th><th>座位号</th><th>性质</th><th>公司</th><th>姓名</th><th>职位</th><th>手机号</th></tr></thead>
+          <thead><tr><th style="width:30px">#</th><th>座位号</th><th>集团</th><th>性质</th><th>公司</th><th>姓名</th><th>职位</th><th>手机号</th></tr></thead>
           <tbody id="seatedBody"></tbody>
         </table>
         <div class="empty-tip" id="seatedEmpty">暂无已入座人员</div>
       </div>
+    </div>
+    </div>
+    <div id="rightTabAuto" style="display:none">
+      <div class="panel">
+        <div class="panel-head">自动排座设置</div>
+        <div class="panel-body" style="padding:12px">
+          <div class="form-row"><label>座次方式</label>
+            <select id="seatMode">
+              <option value="center">中间为主</option>
+              <option value="left">左侧为主</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:12px;margin-bottom:12px">
+            <div class="form-row" style="flex:1"><label>计算时间(秒)</label><input id="calcTime" type="number" value="20" style="width:70px"></div>
+            <div class="form-row" style="flex:1"><label>线程数 <span id="maxThreadsTip" style="font-size:10px;color:var(--text-2);font-weight:400"></span></label><input id="threadNum" type="number" value="2" style="width:70px"></div>
+          </div>
+          <div style="font-size:11px;color:var(--text-2);margin-bottom:8px">性质优先级（数字越小越优先）</div>
+          <div id="naturePriorityList" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-bottom:12px"></div>
+          <div class="form-row"><label>集团优先级文件</label>
+            <button class="btn btn-sm" onclick="document.getElementById('groupFile').click()">上传xlsx</button>
+            <input type="file" id="groupFile" accept=".xlsx,.xls" class="hidden" onchange="importGroupPriority(event)">
+          </div>
+          <div id="groupPriorityList" style="font-size:12px;margin-bottom:12px"></div>
+          <div class="form-row"><label>区域限定</label>
+            <input type="checkbox" id="limitRegionChk" onchange="document.getElementById('regionLimitBtn').disabled=!this.checked">
+            <button class="btn btn-sm" id="regionLimitBtn" disabled onclick="openRegionLimitModal()">限定设置</button>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" style="flex:1" onclick="startAutoSeat()">开始自动排座</button>
+            <button class="btn btn-danger" id="stopAutoBtn" style="flex:1;display:none" onclick="stopAutoSeat()">停止</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:10px">
+        <div class="panel-head">排座日志</div>
+        <div class="panel-body" style="padding:12px">
+          <div style="margin-bottom:8px">
+            <div style="font-size:12px;margin-bottom:4px">计算进度</div>
+            <div style="background:#E5E6EB;border-radius:4px;height:8px;overflow:hidden">
+              <div id="progressBar" style="background:var(--primary);height:100%;width:0%;transition:width .2s"></div>
+            </div>
+            <div id="progressText" style="font-size:11px;color:var(--text-2);margin-top:4px">等待开始</div>
+          </div>
+          <div id="autoLog" style="font-size:11px;color:var(--text-2);max-height:200px;overflow-y:auto"></div>
+          <div style="margin-top:10px">
+            <div style="font-size:11px;margin-bottom:4px">历史最优 <span id="bestCount" style="color:var(--primary)">0</span> 次修复</div>
+            <input type="range" id="bestSlider" min="0" max="0" value="0" style="width:100%" oninput="previewBest(this.value)">
+            <div id="bestInfo" style="font-size:11px;color:var(--text-2)">暂无最优解</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 区域性质选择弹窗 -->
+<div class="modal-mask" id="pickNatureModal" style="z-index:1001">
+  <div class="modal" style="width:360px">
+    <h3 id="pickNatureTitle">选择允许的性质</h3>
+    <div id="pickNatureList" style="margin:16px 0;display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closePickNature()">取消</button>
+      <button class="btn btn-primary" onclick="confirmPickNature()">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 区域限定弹窗 -->
+<div class="modal-mask" id="regionLimitModal">
+  <div class="modal" style="width:520px">
+    <h3>区域限定设置</h3>
+    <div style="font-size:12px;color:var(--text-2);margin-bottom:12px">为每个区域设置允许排座的人员性质，仅勾选的性质可排入该区域</div>
+    <div id="regionLimitList" style="max-height:400px;overflow-y:auto;margin-bottom:16px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeRegionLimitModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveRegionLimit()">确定</button>
     </div>
   </div>
 </div>
@@ -444,6 +528,7 @@ table.person-table tbody tr.selected { background: var(--primary-light); }
   <div class="modal">
     <h3>添加人员</h3>
     <div class="form-row"><label>公司性质</label><input id="f_nature" placeholder="如：政府/国企/民企/外企等"></div>
+    <div class="form-row"><label>所属集团</label><input id="f_group" placeholder="选填"></div>
     <div class="form-row"><label>公司名称</label><input id="f_company"></div>
     <div class="form-row"><label>人员姓名</label><input id="f_name"></div>
     <div class="form-row"><label>职位</label><input id="f_title"></div>
@@ -606,7 +691,7 @@ let state = {
   nextLetterIdx: 1,
   pendingSwapPersonId: null,  // 正在换座的人
   menuContext: null,           // {regionId,row,col}
-  layoutMode: false,           // 全局布局视图
+  layoutMode: true,            // 默认全局布局视图
   viewScale: 0.6,
   viewX: 0, viewY: 0,
   spaceDown: false,
@@ -759,6 +844,14 @@ async function init() {
   initLayoutEvents();
   initResizers();
   renderAll();
+  // 默认全局视图
+  document.getElementById('layoutModeBtn').classList.add('on');
+  document.getElementById('stageNormal').classList.add('hidden');
+  document.getElementById('seatRegion').classList.add('hidden');
+  document.getElementById('layoutViewport').classList.remove('hidden');
+  document.getElementById('canvasWrap').classList.add('full');
+  fitLayoutView();
+  renderLayoutView();
 }
 function createRegion(name, rows, cols, gx, gy) {
   const seats = [];
@@ -802,6 +895,16 @@ function renderStats() {
   const totalPeople = allPeople.length;
   const totalCompanies = allCompanies.size;
   const regionCount = state.regions.length;
+  // 总座位统计
+  let totalSeats = 0, activeSeats = 0;
+  state.regions.forEach(rg => {
+    for (let i = 0; i < rg.rows; i++)
+      for (let j = 0; j < rg.cols; j++) {
+        totalSeats++;
+        if (!rg.seats[i][j] || !rg.seats[i][j].off) activeSeats++;
+      }
+  });
+  document.getElementById('seatTotalStat').textContent = `可用座位 ${activeSeats}/${totalSeats}`;
 
   // 工具栏统计
   const bar = document.getElementById('statsBar');
@@ -820,12 +923,18 @@ function renderLegend() {
   state.people.forEach(p => getNatureColor(p.nature));
   const box = document.getElementById('legendItems');
   box.innerHTML = '';
-  Object.keys(natureColorMap).forEach(n => {
+function renderLegend() {
+  const box = document.getElementById('legendItems');
+  box.innerHTML = '';
+  // 只显示当前人员中存在的性质
+  const activeNatures = [...new Set(state.people.map(p => p.nature).filter(Boolean))];
+  activeNatures.forEach(n => {
     const item = document.createElement('div');
     item.className = 'item';
-    item.innerHTML = `<div class="dot" style="background:${natureColorMap[n]}"></div>${esc(n)}`;
+    item.innerHTML = `<div class="dot" style="background:${getNatureColor(n)}"></div>${esc(n)}`;
     box.appendChild(item);
   });
+}
 }
 
 // ==================== 左栏：区域网格 ====================
@@ -1352,7 +1461,7 @@ function renderUnseated() {
     const tr = document.createElement('tr');
     tr.draggable = true;
     tr.ondragstart = (e) => { e.dataTransfer.setData('dragPerson', p.id); hideTooltip(); };
-    tr.innerHTML = `<td>${idx+1}</td><td>${natureBadge(p.nature)}</td><td>${esc(p.company)}</td><td>${esc(p.name)}</td><td>${esc(p.title||'')}</td><td>${esc(p.phone||'')}</td><td>${esc(p.plate||'')}</td>`;
+    tr.innerHTML = `<td>${idx+1}</td><td>${esc(p.group||'')}</td><td>${natureBadge(p.nature)}</td><td>${esc(p.company)}</td><td>${esc(p.name)}</td><td>${esc(p.title||'')}</td><td>${esc(p.phone||'')}</td><td>${esc(p.plate||'')}</td>`;
     tr.ondblclick = () => quickSeat(p);
     tr.onclick = () => openEditPerson(p);
     body.appendChild(tr);
@@ -1379,7 +1488,7 @@ function renderSeated() {
     const r = state.regions.find(r => r.id === p.seatedAt.regionId);
     const seatId = r ? (r.name + '-' + (p.seatedAt.row+1) + '-' + (p.seatedAt.col+1)) : '-';
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${idx+1}</td><td class="seat-link" style="color:var(--primary);font-weight:600;cursor:pointer">${seatId}</td><td>${natureBadge(p.nature)}</td><td>${esc(p.company)}</td><td>${esc(p.name)}</td><td>${esc(p.title||'')}</td><td>${esc(p.phone||'')}</td>`;
+    tr.innerHTML = `<td>${idx+1}</td><td class="seat-link" style="color:var(--primary);font-weight:600;cursor:pointer">${seatId}</td><td>${esc(p.group||'')}</td><td>${natureBadge(p.nature)}</td><td>${esc(p.company)}</td><td>${esc(p.name)}</td><td>${esc(p.title||'')}</td><td>${esc(p.phone||'')}</td>`;
     tr.onclick = () => openEditPerson(p);
     tr.querySelector('.seat-link').onclick = (e) => { e.stopPropagation(); locatePerson(p); };
     body.appendChild(tr);
@@ -1427,7 +1536,7 @@ function openAddPerson() {
   editingPersonId = null;
   document.getElementById('addPersonModal').querySelector('h3').textContent = '添加人员';
   document.getElementById('deletePersonBtn').classList.add('hidden');
-  ['f_nature','f_company','f_name','f_title','f_phone','f_plate'].forEach(id => document.getElementById(id).value = '');
+  ['f_nature','f_group','f_company','f_name','f_title','f_phone','f_plate'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f_driver').value = 'false';
   document.getElementById('addPersonModal').classList.add('show');
 }
@@ -1436,6 +1545,7 @@ function openEditPerson(p) {
   document.getElementById('addPersonModal').querySelector('h3').textContent = '编辑人员';
   document.getElementById('deletePersonBtn').classList.remove('hidden');
   document.getElementById('f_nature').value = p.nature || '';
+  document.getElementById('f_group').value = p.group || '';
   document.getElementById('f_company').value = p.company;
   document.getElementById('f_name').value = p.name;
   document.getElementById('f_title').value = p.title || '';
@@ -1448,6 +1558,7 @@ let editingPersonId = null;
 function savePerson() {
   const data = {
     nature: document.getElementById('f_nature').value,
+    group: document.getElementById('f_group').value.trim(),
     company: document.getElementById('f_company').value.trim(),
     name: document.getElementById('f_name').value.trim(),
     title: document.getElementById('f_title').value.trim(),
@@ -1513,12 +1624,12 @@ function downloadTemplate() {
   try {
     if (typeof XLSX === 'undefined') { alert('Excel库未加载，请检查网络后刷新'); return; }
     const data = [
-      ['座位号(如A-3-5,留空则未入座)','公司性质','公司名称','人员姓名','职位','手机号','是否驾车(是/否)','车牌号'],
-      ['A-1-1','民企','示例科技有限公司','张三','董事长','13800138000','是','京A12345'],
-      ['','国企','示例集团有限公司','李四','总经理','13900139000','否','']
+      ['座位号(如A-3-5,留空则未入座)','公司性质','所属集团','公司名称','人员姓名','职位','手机号','是否驾车(是/否)','车牌号'],
+      ['A-1-1','民企','','示例科技有限公司','张三','董事长','13800138000','是','京A12345'],
+      ['','国企','示例集团','示例集团有限公司','李四','总经理','13900139000','否','']
     ];
     const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [{wch:20},{wch:16},{wch:24},{wch:14},{wch:14},{wch:16},{wch:14},{wch:14}];
+    ws['!cols'] = [{wch:20},{wch:16},{wch:14},{wch:24},{wch:14},{wch:14},{wch:16},{wch:14},{wch:14}];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '人员名单');
     XLSX.writeFile(wb, '人员导入模板.xlsx');
@@ -1536,20 +1647,21 @@ function importPeople(e) {
       let n = 0, dup = 0, seated = 0;
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
-        if (!row || !row[3]) continue;
+        if (!row || !row[4]) continue;
         const seatNo = String(row[0]||'').trim();
         const nature = String(row[1]||'').trim() || '未分类';
-        const company = String(row[2]||'').trim();
-        const name = String(row[3]||'').trim();
-        const title = String(row[4]||'').trim();
-        const phone = String(row[5]||'').trim();
-        const driver = String(row[6]||'').trim() === '是';
-        const plate = String(row[7]||'').trim();
+        const group = String(row[2]||'').trim();
+        const company = String(row[3]||'').trim();
+        const name = String(row[4]||'').trim();
+        const title = String(row[5]||'').trim();
+        const phone = String(row[6]||'').trim();
+        const driver = String(row[7]||'').trim() === '是';
+        const plate = String(row[8]||'').trim();
         // 手机号查重：重复则不分配座位，放入未入座
         const isDup = phone && state.people.find(p => p.phone === phone);
         if (isDup) dup++;
         const p = {
-          id: uid(), nature, company, name, title, phone, driver, plate,
+          id: uid(), nature, group, company, name, title, phone, driver, plate,
           seatedAt: null
         };
         // 解析座位号（重复手机号不自动入座）
@@ -1589,18 +1701,18 @@ function exportPeople() {
     if (a.seatedAt.row !== b.seatedAt.row) return a.seatedAt.row - b.seatedAt.row;
     return a.seatedAt.col - b.seatedAt.col;
   });
-  const data = [['区域','排','列','座位号','公司性质','公司名称','人员姓名','职位','手机号','是否驾车','车牌号']];
+  const data = [['区域','排','列','座位号','公司性质','所属集团','公司名称','人员姓名','职位','手机号','是否驾车','车牌号']];
   list.forEach(p => {
     const r = state.regions.find(r => r.id === p.seatedAt.regionId);
     data.push([
       r ? r.name : '', p.seatedAt.row+1, p.seatedAt.col+1,
       r ? (r.name + '-' + (p.seatedAt.row+1) + '-' + (p.seatedAt.col+1)) : '',
-      p.nature || '其他',
+      p.nature || '其他', p.group || '',
       p.company, p.name, p.title, p.phone, p.driver ? '是' : '否', p.plate
     ]);
   });
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{wch:8},{wch:6},{wch:6},{wch:14},{wch:12},{wch:24},{wch:14},{wch:14},{wch:16},{wch:10},{wch:14}];
+  ws['!cols'] = [{wch:8},{wch:6},{wch:6},{wch:14},{wch:12},{wch:14},{wch:24},{wch:14},{wch:14},{wch:16},{wch:10},{wch:14}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '已入座清单');
   XLSX.writeFile(wb, '已入座人员清单.xlsx');
@@ -1633,16 +1745,14 @@ function importLayout(e) {
 // ==================== 通用 UI ====================
 function esc(s) { return String(s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 // 公司性质动态配色
-let natureColorMap = {};
 const NATURE_PRESET = ['#E5484D','#4F6EF7','#30A46C','#F59E0B','#8B5CF6','#EC4899','#0EA5E9','#F97316','#14B8A6','#6366F1'];
-let natureIdx = 0;
 function getNatureColor(n) {
   n = n || '未分类';
-  if (!natureColorMap[n]) {
-    natureColorMap[n] = NATURE_PRESET[natureIdx % NATURE_PRESET.length];
-    natureIdx++;
+  if (!state.natureColorMap) state.natureColorMap = {};
+  if (!state.natureColorMap[n]) {
+    state.natureColorMap[n] = NATURE_PRESET[Object.keys(state.natureColorMap).length % NATURE_PRESET.length];
   }
-  return natureColorMap[n];
+  return state.natureColorMap[n];
 }
 function natureBadge(n) {
   const c = getNatureColor(n);
@@ -2012,8 +2122,8 @@ function exportImage() {
   // 图例
   const legend = document.createElement('div');
   legend.style.cssText = 'margin-top:20px;display:flex;gap:16px;justify-content:center;font-size:12px;flex-wrap:wrap';
-  Object.keys(natureColorMap).forEach(n => {
-    legend.innerHTML += '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;border-radius:3px;background:'+natureColorMap[n]+'"></span>'+esc(n)+'</span>';
+  Object.keys(state.natureColorMap || {}).forEach(n => {
+    legend.innerHTML += '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;border-radius:3px;background:'+state.natureColorMap[n]+'"></span>'+esc(n)+'</span>';
   });
   offscreen.appendChild(legend);
   document.body.appendChild(offscreen);
@@ -2229,6 +2339,501 @@ function doShiftCol(dir) {
     renderAll();
     toast('已完成');
   });
+}
+
+// ===== 自动排座 =====
+let groupPriority = {};
+let regionLimitConfig = {}; // regionId -> [允许的性质数组]
+
+function switchRightTab(tab) {
+  document.querySelectorAll('.panel-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('rightTabPeople').style.display = tab === 'people' ? 'flex' : 'none';
+  document.getElementById('rightTabAuto').style.display = tab === 'auto' ? 'block' : 'none';
+  if (tab === 'auto') {
+    renderNaturePriority();
+    const maxT = navigator.hardwareConcurrency || 4;
+    document.getElementById('maxThreadsTip').textContent = `(最大${maxT})`;
+    document.getElementById('threadNum').max = maxT;
+  }
+}
+
+function renderNaturePriority() {
+  const natures = [...new Set(state.people.map(p => p.nature).filter(Boolean))];
+  const box = document.getElementById('naturePriorityList');
+  box.innerHTML = natures.map(n =>
+    `<div style="display:flex;align-items:center;gap:4px">
+      <span style="flex:1;font-size:12px">${n}</span>
+      <input type="number" data-nature="${n}" value="${state.naturePriority?.[n] ?? 99}" style="width:44px;padding:2px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+    </div>`
+  ).join('');
+}
+
+let allNatures = [];
+function openRegionLimitModal() {
+  allNatures = [...new Set(state.people.map(p => p.nature).filter(Boolean))];
+  // 按区域编辑的 gx/gy 排列
+  const box = document.getElementById('regionLimitList');
+  // 计算布局范围
+  const minX = Math.min(...state.regions.map(r => r.gx));
+  const minY = Math.min(...state.regions.map(r => r.gy));
+  const maxX = Math.max(...state.regions.map(r => r.gx));
+  const maxY = Math.max(...state.regions.map(r => r.gy));
+  box.style.display = 'grid';
+  box.style.gridTemplateColumns = `repeat(${maxX - minX + 1}, 1fr)`;
+  box.style.gap = '10px';
+  box.innerHTML = state.regions.map(r => {
+    const allowed = regionLimitConfig[r.id] || [];
+    return `<div class="region-limit-card" data-region="${r.id}" style="
+        border:1px solid var(--border);border-radius:8px;padding:16px;min-height:90px;cursor:pointer;
+        grid-column:${r.gx - minX + 1};grid-row:${r.gy - minY + 1};text-align:center;
+      " onclick="pickNaturesForRegion('${r.id}')">
+      <div style="font-weight:600;margin-bottom:8px">${r.name}</div>
+      <div style="font-size:12px;color:var(--text-2)">${allowed.join('<br>') || '<span style="color:#C8CBD6">点击设置</span>'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('regionLimitModal').classList.add('show');
+}
+function pickNaturesForRegion(regionId) {
+  pickNatureRegionId = regionId;
+  const r = state.regions.find(r => r.id === regionId);
+  document.getElementById('pickNatureTitle').textContent = `设置 ${r.name} 允许的性质`;
+  const allowed = regionLimitConfig[regionId] || [];
+  document.getElementById('pickNatureList').innerHTML = allNatures.map(n =>
+    `<label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer">
+      <input type="checkbox" value="${n}" ${allowed.includes(n)?'checked':''}> ${n}
+    </label>`
+  ).join('');
+  document.getElementById('pickNatureModal').classList.add('show');
+}
+function closePickNature() { document.getElementById('pickNatureModal').classList.remove('show'); }
+function confirmPickNature() {
+  const checked = [...document.querySelectorAll('#pickNatureList input:checked')].map(i => i.value);
+  regionLimitConfig[pickNatureRegionId] = checked;
+  closePickNature();
+  openRegionLimitModal();
+}
+function closeRegionLimitModal() { document.getElementById('regionLimitModal').classList.remove('show'); }
+function saveRegionLimit() {
+  closeRegionLimitModal();
+  toast('区域限定已保存');
+}
+
+function importGroupPriority(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const wb = XLSX.read(ev.target.result);
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+    groupPriority = {};
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i] && rows[i][0]) groupPriority[String(rows[i][0]).trim()] = parseInt(rows[i][1]) || 99;
+    }
+    document.getElementById('groupPriorityList').textContent = `已加载 ${Object.keys(groupPriority).length} 个集团优先级`;
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+}
+
+// 生成整个会场的座位序列（按中间为主/左侧为主排序）
+function getVenueSeatSequence(mode) {
+  // 按区域编辑的 gy 分行，同一 gy 的区域算同一排
+  const rows = {};
+  const minX = Math.min(...state.regions.map(r => r.gx));
+  const minY = Math.min(...state.regions.map(r => r.gy));
+  // 先计算每个区域的全局 x 偏移（按 gx 排序累加列数+间距）
+  const sortedRegions = [...state.regions].sort((a,b) => a.gx - b.gx || a.gy - b.gy);
+  const regionX = {};
+  // 按行分组计算每个区域的 x 偏移
+  const rowGroups = {};
+  state.regions.forEach(r => {
+    const ry = r.gy - minY;
+    if (!rowGroups[ry]) rowGroups[ry] = [];
+    rowGroups[ry].push(r);
+  });
+  // 每行内按 gx 排序，计算全局 x
+  Object.keys(rowGroups).forEach(ry => {
+    rowGroups[ry].sort((a,b) => a.gx - b.gx);
+    let offset = 0;
+    rowGroups[ry].forEach(r => {
+      regionX[r.id] = offset;
+      offset += r.cols + 2; // 2列间距
+    });
+  });
+
+  state.regions.forEach(r => {
+    const my = r.gy - minY;
+    for (let i = 0; i < r.rows; i++) {
+      const rowKey = my * 1000 + i;
+      if (!rows[rowKey]) rows[rowKey] = [];
+      for (let j = 0; j < r.cols; j++) {
+        if (r.seats[i][j] && r.seats[i][j].off) continue;
+        rows[rowKey].push({
+          regionId: r.id, row: i, col: j,
+          globalX: regionX[r.id] + j
+        });
+      }
+    }
+  });
+
+  const rowKeys = Object.keys(rows).map(Number).sort((a,b) => a-b);
+  const result = [];
+  for (const key of rowKeys) {
+    const rowSeats = rows[key];
+    if (mode === 'center') {
+      // 中间为主：从行中间往两侧排
+      const xs = rowSeats.map(s => s.globalX).sort((a,b) => a-b);
+      const center = (xs[0] + xs[xs.length-1]) / 2;
+      rowSeats.sort((a,b) => Math.abs(a.globalX - center) - Math.abs(b.globalX - center));
+    } else {
+      rowSeats.sort((a,b) => a.globalX - b.globalX);
+    }
+    result.push(...rowSeats);
+  }
+  return result;
+}
+
+// 计算两个座位之间的"距离"（同排相邻=1，同公司聚集度评分）
+function seatDist(s1, s2) {
+  if (s1.regionId !== s2.regionId) return 999;
+  if (s1.row === s2.row) return Math.abs(s1.col - s2.col);
+  if (Math.abs(s1.row - s2.row) === 1) return Math.abs(s1.col - s2.col) + 2;
+  return 999;
+}
+
+let allSeats = [];
+let seatIndexMap = {}; // seat key -> index
+let personMap = {}; // personId -> person
+// 计算当前座位分配的"成本"
+function calcCost(assign) {
+  let cost = 0;
+  // 1. 位置优先级成本
+  for (let i = 0; i < assign.length; i++) {
+    const p = personMap[assign[i].personId];
+    if (!p) continue;
+    const pri = state.naturePriority?.[p.nature] ?? 99;
+    const key = assign[i].seat.regionId + '_' + assign[i].seat.row + '_' + assign[i].seat.col;
+    const seatIdx = seatIndexMap[key] ?? 999;
+    cost += seatIdx * (100 - pri) * 0.01;
+  }
+  // 2. 同公司聚集成本（用公司分组优化）
+  const byCompany = {};
+  for (const a of assign) {
+    const p = personMap[a.personId];
+    if (!p) continue;
+    if (!byCompany[p.company]) byCompany[p.company] = [];
+    byCompany[p.company].push(a.seat);
+  }
+  for (const company in byCompany) {
+    const seats = byCompany[company];
+    for (let i = 0; i < seats.length; i++) {
+      for (let j = i+1; j < seats.length; j++) {
+        cost += seatDist(seats[i], seats[j]) * 0.3;
+      }
+    }
+  }
+  return cost;
+}
+
+let autoSeatStop = false;
+function stopAutoSeat() { autoSeatStop = true; }
+async function startAutoSeat() {
+  confirmDialog('自动排座', '将清空当前所有入座并重新排座，确定？', async () => {
+    closeModal('confirmModal'); // 立即关闭确认弹窗
+    const mode = document.getElementById('seatMode').value;
+    const totalTime = parseInt(document.getElementById('calcTime').value) || 10;
+    const numThreads = Math.min(parseInt(document.getElementById('threadNum').value) || 1, navigator.hardwareConcurrency || 4);
+    const useLimit = document.getElementById('limitRegionChk').checked;
+    // 读性质优先级
+    const np = {};
+    document.querySelectorAll('#naturePriorityList input').forEach(inp => {
+      np[inp.dataset.nature] = parseInt(inp.value) || 99;
+    });
+    state.naturePriority = np;
+
+    // 清空所有座位
+    state.regions.forEach(r => {
+      for (let i = 0; i < r.rows; i++)
+        for (let j = 0; j < r.cols; j++)
+          if (r.seats[i][j] && !r.seats[i][j].off) r.seats[i][j] = null;
+    });
+    state.people.forEach(p => p.seatedAt = null);
+
+    // 收集未入座人员
+    const people = state.people.filter(p => !p.seatedAt);
+    if (people.length === 0) { toast('没有待排人员'); return; }
+    people.sort((a,b) => {
+      const na = np[a.nature] ?? 99, nb = np[b.nature] ?? 99;
+      if (na !== nb) return na - nb;
+      const ga = a.group ? (groupPriority[a.group] ?? 50) : 99;
+      const gb = b.group ? (groupPriority[b.group] ?? 50) : 99;
+      if (ga !== gb) return ga - gb;
+      if (a.company !== b.company) return a.company < b.company ? -1 : 1;
+      return a.name < b.name ? -1 : 1;
+    });
+
+    allSeats = getVenueSeatSequence(mode);
+    // 预计算索引Map，加速calcCost
+    seatIndexMap = {};
+    allSeats.forEach((s, idx) => { seatIndexMap[s.regionId + '_' + s.row + '_' + s.col] = idx; });
+    personMap = {};
+    state.people.forEach(p => { personMap[p.id] = p; });
+
+    // 贪心初始分配：按性质分层，高优先级性质坐中间，不同性质不交叉
+    const initialAssign = [];
+    // 按性质分组
+    const byNature = {};
+    people.forEach(p => {
+      const n = p.nature || '其他';
+      if (!byNature[n]) byNature[n] = [];
+      byNature[n].push(p);
+    });
+    // 性质按优先级排序
+    const sortedNatures = Object.keys(byNature).sort((a,b) => (np[a]??99) - (np[b]??99));
+    // 按座位序列顺序，依次分配：高优先级性质的人先占中间座位
+    let si = 0;
+    for (const nat of sortedNatures) {
+      // 同性质内按公司分组，同公司的人连续排
+      const natPeople = byNature[nat];
+      natPeople.sort((a,b) => a.company < b.company ? -1 : a.company > b.company ? 1 : 0);
+      for (const p of natPeople) {
+        while (si < allSeats.length) {
+          const seat = allSeats[si++];
+          if (useLimit && regionLimitConfig[seat.regionId] && regionLimitConfig[seat.regionId].length) {
+            if (!regionLimitConfig[seat.regionId].includes(p.nature)) continue;
+          }
+          initialAssign.push({personId: p.id, seat: seat});
+          break;
+        }
+      }
+    }
+
+    // 初始化日志
+    const logBox = document.getElementById('autoLog');
+    logBox.innerHTML = '';
+    const addLog = (msg) => {
+      logBox.innerHTML += `<div style="padding:2px 0;border-bottom:1px solid #F0F0F0">${new Date().toLocaleTimeString()} ${msg}</div>`;
+      logBox.scrollTop = logBox.scrollHeight;
+    };
+    addLog(`开始排座：${people.length} 人，${allSeats.length} 个可用座位，${numThreads} 线程，共 ${totalTime} 秒`);
+
+    autoSeatStop = false;
+    document.getElementById('stopAutoBtn').style.display = '';
+    // 历史最优记录
+    historyBests = [];
+    fixCount = 0;
+    globalBestCost = Infinity;
+    document.getElementById('bestCount').textContent = '0';
+    document.getElementById('bestSlider').max = 0;
+    document.getElementById('bestSlider').value = 0;
+    document.getElementById('bestInfo').textContent = '暂无最优解';
+    function saveBest(assign, cost, thread) {
+      // 只有比历史最优更好才记录
+      if (cost >= globalBestCost - 0.01) return;
+      globalBestCost = cost;
+      lastBestTime = Date.now();
+      fixCount++;
+      const companies = new Set(assign.map(a => {
+        const p = state.people.find(p => p.id === a.personId);
+        return p ? p.company : '';
+      }));
+      historyBests.push({assign: assign.map(a => ({...a, seat: {...a.seat}})), cost, thread, time: Date.now(), people: assign.length, companies: companies.size});
+      document.getElementById('bestCount').textContent = fixCount;
+      const slider = document.getElementById('bestSlider');
+      slider.max = historyBests.length - 1;
+      slider.value = historyBests.length - 1;
+      document.getElementById('bestInfo').textContent = `#${historyBests.length} 成本 ${Math.round(cost)}，${assign.length} 人，${companies.size} 家公司，线程 ${thread}`;
+      addLog(`★ 修复 #${fixCount}：线程${thread}，成本 ${Math.round(cost)}，${assign.length} 人，${companies.size} 家公司`);
+      // 实时渲染到画布（用临时数据，不影响计算）
+      previewBestData(assign);
+    }
+
+    // 多线程交替执行（模拟同时计算）
+    const overallStart = Date.now();
+    let totalIter = 0;
+    let lastBestTime = Date.now();
+    const noImproveLimit = 180 * 1000; // 3分钟无新修复停止
+    // 初始化每个线程
+    const threads = [];
+    for (let t = 0; t < numThreads; t++) {
+      let cur = initialAssign.map(a => ({...a, seat: {...a.seat}}));
+      let curCost = calcCost(cur);
+      threads.push({
+        cur, curCost, best: cur.map(a => ({...a, seat: {...a.seat}})), bestCost: curCost,
+        temp: 100, cooling: 0.995, iter: 0
+      });
+      addLog(`线程 ${t+1} 启动，初始成本 ${Math.round(curCost)}`);
+    }
+    // 记录初始最优
+    saveBest(threads[0].best, threads[0].bestCost, 0);
+
+    // 交替执行每个线程的迭代
+    while (Date.now() - overallStart < totalTime * 1000) {
+      if (autoSeatStop) { addLog('★ 用户手动停止'); break; }
+      // 3分钟无新修复自动停止
+      if (Date.now() - lastBestTime > noImproveLimit) {
+        addLog('★ 3分钟无新方案，自动停止');
+        break;
+      }
+      for (let t = 0; t < numThreads; t++) {
+        const th = threads[t];
+        // 每个线程跑一批迭代
+        for (let batch = 0; batch < 50; batch++) {
+          th.iter++;
+          totalIter++;
+          // 80%概率SA交换，20%概率LNS破坏重建
+          if (Math.random() < 0.8) {
+            // SA：随机交换两个**同性质**的人（不跨性质）
+            const i = Math.floor(Math.random() * th.cur.length);
+            const j = Math.floor(Math.random() * th.cur.length);
+            if (i === j) continue;
+            const pi = personMap[th.cur[i].personId];
+            const pj = personMap[th.cur[j].personId];
+            if (pi.nature !== pj.nature) continue; // 同性质才允许交换
+            if (useLimit) {
+              const ri = regionLimitConfig[th.cur[j].seat.regionId];
+              const rj = regionLimitConfig[th.cur[i].seat.regionId];
+              if (ri && ri.length && !ri.includes(pi.nature)) continue;
+              if (rj && rj.length && !rj.includes(pj.nature)) continue;
+            }
+            const tmp = th.cur[i].seat;
+            th.cur[i].seat = th.cur[j].seat;
+            th.cur[j].seat = tmp;
+            const newCost = calcCost(th.cur);
+            const delta = newCost - th.curCost;
+            if (delta < 0 || Math.random() < Math.exp(-delta / th.temp)) {
+              th.curCost = newCost;
+              if (newCost < th.bestCost) {
+                th.bestCost = newCost;
+                th.best = th.cur.map(a => ({...a, seat: {...a.seat}}));
+                saveBest(th.best, th.bestCost, t+1);
+              }
+            } else {
+              const tmp2 = th.cur[i].seat;
+              th.cur[i].seat = th.cur[j].seat;
+              th.cur[j].seat = tmp2;
+            }
+          } else {
+            // LNS：随机取出10%的人，重新贪心分配
+            const removeCount = Math.max(3, Math.floor(th.cur.length * 0.1));
+            const removed = [];
+            for (let k = 0; k < removeCount; k++) {
+              const idx = Math.floor(Math.random() * th.cur.length);
+              removed.push(th.cur[idx]);
+              th.cur.splice(idx, 1);
+            }
+            // 收集空座位
+            const usedSeats = new Set(th.cur.map(a => a.seat.regionId + '_' + a.seat.row + '_' + a.seat.col));
+            const emptySeats = allSeats.filter(s => !usedSeats.has(s.regionId + '_' + s.row + '_' + s.col));
+            // 贪心重新分配：按优先级排序removed的人，坐到最靠近的空座位
+            removed.sort((a,b) => {
+              const pa = people.find(p => p.id === a.personId);
+              const pb = people.find(p => p.id === b.personId);
+              return (np[pa.nature] ?? 99) - (np[pb.nature] ?? 99);
+            });
+            for (const item of removed) {
+              // 找第一个符合区域限定的空座位
+              const seat = emptySeats.find(s => {
+                if (!useLimit) return true;
+                const rl = regionLimitConfig[s.regionId];
+                if (!rl || !rl.length) return true;
+                const p = people.find(p => p.id === item.personId);
+                return rl.includes(p.nature);
+              });
+              if (seat) {
+                th.cur.push({personId: item.personId, seat: seat});
+                emptySeats.splice(emptySeats.indexOf(seat), 1);
+              } else {
+                th.cur.push(item);
+              }
+            }
+            const newCost = calcCost(th.cur);
+            const delta = newCost - th.curCost;
+            if (delta < 0 || Math.random() < Math.exp(-delta / th.temp)) {
+              th.curCost = newCost;
+              if (newCost < th.bestCost) {
+                th.bestCost = newCost;
+                th.best = th.cur.map(a => ({...a, seat: {...a.seat}}));
+                saveBest(th.best, th.bestCost, t+1);
+              }
+            } else {
+              // 回退：恢复removed
+              for (const item of removed) th.cur.splice(th.cur.findIndex(a => a.personId === item.personId), 1);
+              th.cur.push(...removed);
+            }
+          }
+          th.temp *= th.cooling;
+        }
+      }
+      // 更新进度
+      const elapsed = (Date.now() - overallStart) / 1000;
+      document.getElementById('progressBar').style.width = Math.min(100, elapsed / totalTime * 100) + '%';
+      document.getElementById('progressText').textContent = `计算中... 总迭代 ${totalIter}，修复 ${fixCount} 次（超时3分钟无新方案自动停止）`;
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    // 取最终全局最优
+    let globalBest = historyBests[historyBests.length-1].assign;
+
+    // 应用最优解
+    state.regions.forEach(r => {
+      for (let i = 0; i < r.rows; i++)
+        for (let j = 0; j < r.cols; j++)
+          if (r.seats[i][j] && !r.seats[i][j].off) r.seats[i][j] = null;
+    });
+    state.people.forEach(p => p.seatedAt = null);
+    globalBest.forEach(a => {
+      const r = state.regions.find(r => r.id === a.seat.regionId);
+      r.seats[a.seat.row][a.seat.col] = {personId: a.personId};
+      const p = state.people.find(p => p.id === a.personId);
+      p.seatedAt = {regionId: a.seat.regionId, row: a.seat.row, col: a.seat.col};
+    });
+
+    renderAll();
+    document.getElementById('progressBar').style.width = '100%';
+    document.getElementById('progressText').textContent = `完成：${globalBest.length} 人，最优成本 ${Math.round(globalBestCost)}，总迭代 ${totalIter} 次`;
+    addLog(`全部完成：${globalBest.length} 人入座，最优成本 ${Math.round(globalBestCost)}，总迭代 ${totalIter} 次`);
+    document.getElementById('stopAutoBtn').style.display = 'none';
+    toast('自动排座完成');
+  });
+}
+
+let historyBests = [];
+function previewBestData(assign) {
+  // 直接修改 state 并渲染（计算用的是 th.cur 副本，不影响）
+  state.regions.forEach(r => {
+    for (let i = 0; i < r.rows; i++)
+      for (let j = 0; j < r.cols; j++)
+        if (r.seats[i][j] && !r.seats[i][j].off) r.seats[i][j] = null;
+  });
+  state.people.forEach(p => p.seatedAt = null);
+  assign.forEach(a => {
+    const r = state.regions.find(r => r.id === a.seat.regionId);
+    r.seats[a.seat.row][a.seat.col] = {personId: a.personId};
+    const p = state.people.find(p => p.id === a.personId);
+    p.seatedAt = {regionId: a.seat.regionId, row: a.seat.row, col: a.seat.col};
+  });
+  renderSeatCanvas();
+  if (state.layoutMode) renderLayoutView();
+}
+function previewBest(idx) {
+  if (!historyBests[idx]) return;
+  const b = historyBests[idx];
+  document.getElementById('bestInfo').textContent = `#${parseInt(idx)+1} 成本 ${Math.round(b.cost)}，${b.people} 人，${b.companies} 家公司，线程 ${b.thread}`;
+  // 预览该最优解
+  state.regions.forEach(r => {
+    for (let i = 0; i < r.rows; i++)
+      for (let j = 0; j < r.cols; j++)
+        if (r.seats[i][j] && !r.seats[i][j].off) r.seats[i][j] = null;
+  });
+  state.people.forEach(p => p.seatedAt = null);
+  b.assign.forEach(a => {
+    const r = state.regions.find(r => r.id === a.seat.regionId);
+    r.seats[a.seat.row][a.seat.col] = {personId: a.personId};
+    const p = state.people.find(p => p.id === a.personId);
+    p.seatedAt = {regionId: a.seat.regionId, row: a.seat.row, col: a.seat.col};
+  });
+  renderAll();
 }
 
 init();
