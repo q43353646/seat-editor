@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>我的座位</title>
+<style>
+:root {
+  --bg: #F7F8FA;
+  --card: #FFFFFF;
+  --text: #1F2329;
+  --text-2: #646A73;
+  --border: #E5E6EB;
+  --primary: #3478F6;
+  --green: #30A46C;
+  --highlight: #F59E0B;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.header {
+  background: var(--card);
+  padding: 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+.header h1 { font-size: 18px; font-weight: 600; }
+.container { padding: 16px; max-width: 600px; margin: 0 auto; }
+.search-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.search-card label { font-size: 13px; color: var(--text-2); display: block; margin-bottom: 8px; }
+.search-row { display: flex; gap: 8px; }
+.search-row input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 16px;
+  outline: none;
+}
+.search-row input:focus { border-color: var(--primary); }
+.search-row button {
+  padding: 12px 20px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.result-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  display: none;
+}
+.result-card.show { display: block; }
+.result-card .seat-no {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary);
+  text-align: center;
+  margin: 8px 0;
+}
+.result-card .info { text-align: center; color: var(--text-2); font-size: 14px; line-height: 1.8; }
+.map-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+.map-card h2 { font-size: 15px; margin-bottom: 12px; }
+.map-wrap {
+  overflow: hidden;
+  touch-action: none;
+  position: relative;
+  height: 60vh;
+}
+.map-inner {
+  position: relative;
+  transform-origin: 0 0;
+  margin: 0;
+}
+.stage {
+  background: #1F2329;
+  color: #fff;
+  text-align: center;
+  padding: 6px 30px;
+  border-radius: 6px;
+  font-size: 12px;
+  position: absolute;
+}
+.region-block {
+  position: absolute;
+}
+.region-name {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  text-align: center;
+}
+.seat-grid {
+  display: grid;
+  gap: 3px;
+}
+.seat {
+  width: 26px; height: 26px;
+  border-radius: 4px;
+  background: #C9CDD4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: #fff;
+}
+.seat.off { background: #F0F1F3; color: #C9CDD4; }
+.seat.me {
+  background: var(--highlight);
+  animation: pulse 1.5s infinite;
+  z-index: 2;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--highlight), 0 0 8px rgba(245,158,11,0.5); }
+  50% { box-shadow: 0 0 0 3px rgba(245,158,11,0.5), 0 0 14px rgba(245,158,11,0.9); }
+}
+.zoom-tip { font-size: 11px; color: var(--text-2); text-align: center; margin-top: 8px; }
+.loading { text-align: center; padding: 40px; color: var(--text-2); }
+.error { text-align: center; padding: 20px; color: #E5484D; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="header"><h1>会场座位查询</h1></div>
+<div class="container">
+  <div class="search-card">
+    <label>输入手机号查询您的座位</label>
+    <div class="search-row">
+      <input type="tel" id="phoneInput" placeholder="请输入手机号" maxlength="11">
+      <button onclick="querySeat()">查询</button>
+    </div>
+  </div>
+  <div class="result-card" id="resultCard">
+    <div style="text-align:center;color:var(--text-2);font-size:13px">我的座位号</div>
+    <div class="seat-no" id="seatNo"></div>
+    <div class="info" id="personInfo"></div>
+  </div>
+  <div class="map-card" id="mapCard" style="display:none">
+    <h2>会场布局（高亮为您的座位）</h2>
+    <div class="map-wrap" id="mapWrap"><div class="map-inner" id="mapInner"></div></div>
+    <div class="zoom-tip">双指缩放 · 单指拖动</div>
+  </div>
+  <div class="loading" id="loading" style="display:none">加载中...</div>
+  <div class="error" id="error"></div>
+</div>
+<script>
+const SB_URL = 'https://rknfmzjoldpzsdeyrqmq.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrbmZtempvbGRwenNkZXlycW1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzOTM2ODMsImV4cCI6MjEwNzk2OTY4M30.DAx44Wj4XndIEkuxvqeHVuw01oucp0f1DkeKpA-PBtk';
+const ROOM = 'default';
+let publicMap = null;
+
+async function loadPublicMap() {
+  const res = await fetch(SB_URL + '/rest/v1/app_state?room=eq.' + ROOM + '&select=data->publicMap', {
+    headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY}
+  });
+  const rows = await res.json();
+  if (rows && rows.length > 0 && rows[0].publicMap) publicMap = rows[0].publicMap;
+}
+
+async function findPerson(phone) {
+  // 从独立 people 表按手机号查，只返回该人员
+  const res = await fetch(SB_URL + '/rest/v1/people?room=eq.' + ROOM + '&phone=eq.' + phone, {
+    headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY}
+  });
+  const rows = await res.json();
+  if (rows && rows.length > 0) return rows[0];
+  return null;
+}
+
+async function querySeat() {
+  const phone = document.getElementById('phoneInput').value.trim();
+  const resultCard = document.getElementById('resultCard');
+  const mapCard = document.getElementById('mapCard');
+  const errorEl = document.getElementById('error');
+  errorEl.textContent = '';
+  resultCard.classList.remove('show');
+  mapCard.style.display = 'none';
+  if (!phone || phone.length !== 11) { errorEl.textContent = '请输入11位手机号'; return; }
+  document.getElementById('loading').style.display = 'block';
+  try {
+    if (!publicMap) await loadPublicMap();
+    const person = await findPerson(phone);
+    document.getElementById('loading').style.display = 'none';
+    if (!publicMap) { errorEl.textContent = '未加载到会场数据'; return; }
+    if (!person) { errorEl.textContent = '未找到该手机号对应的人员，请确认输入正确'; return; }
+    // 映射字段名
+    person.seatedAt = person.seated_at || null;
+    if (!person.seatedAt) {
+      document.getElementById('seatNo').textContent = '未安排';
+      document.getElementById('personInfo').innerHTML =
+        `${person.name}（${person.company||'—'}）<br>尚未安排座位，请联系工作人员`;
+      resultCard.classList.add('show');
+      return;
+    }
+    const r = publicMap.regions.find(r => r.id === person.seatedAt.regionId);
+    const seatNo = r ? `${r.name}-${person.seatedAt.row+1}-${person.seatedAt.col+1}` : '未知';
+    document.getElementById('seatNo').textContent = seatNo;
+    document.getElementById('personInfo').innerHTML =
+      `${person.name} · ${person.title||''}<br>${person.company||''}`;
+    resultCard.classList.add('show');
+    renderMap(person);
+    mapCard.style.display = 'block';
+    setTimeout(() => fitMap(document.getElementById('mapInner').offsetWidth, document.getElementById('mapInner').offsetHeight), 50);
+  } catch(e) {
+    document.getElementById('loading').style.display = 'none';
+    errorEl.textContent = '加载失败：' + e.message;
+  }
+}
+
+function renderMap(me) {
+  const inner = document.getElementById('mapInner');
+  const regs = publicMap.regions;
+  const maxGx = Math.max(...regs.map(r => r.gx || 0));
+  const minGx = Math.min(...regs.map(r => r.gx || 0));
+  const maxGy = Math.max(...regs.map(r => r.gy || 0));
+  const minGy = Math.min(...regs.map(r => r.gy || 0));
+  // 与编辑页一致：所有区域统一大小
+  const maxCols = Math.max(...regs.map(r => r.cols));
+  const maxRows = Math.max(...regs.map(r => r.rows));
+  const seatW = 26, gap = 3, padX = 10, padTop = 18;
+  const CELL_W = maxCols * seatW + (maxCols-1)*gap + padX*2;
+  const CELL_H = maxRows * (seatW+gap) + padTop + 30;
+  const GAP = 50;
+  const STAGE_H = 40;
+
+  const totalW = (maxGx - minGx + 1) * CELL_W + (maxGx - minGx) * GAP + 40;
+  const totalH = (maxGy - minGy + 1) * CELL_H + (maxGy - minGy) * GAP + STAGE_H + 40;
+  inner.style.width = totalW + 'px';
+  inner.style.height = totalH + 'px';
+
+  // 舞台居中
+  const stageW = 120;
+  const stageX = (totalW - stageW) / 2;
+  const stageY = 10;
+  let html = `<div class="stage" style="left:${stageX}px;top:${stageY}px;width:${stageW}px">舞 台</div>`;
+
+  regs.forEach(r => {
+    const x = (r.gx - minGx) * (CELL_W + GAP) + 20;
+    const y = (r.gy - minGy) * (CELL_H + GAP) + STAGE_H + 20;
+    html += `<div class="region-block" style="left:${x}px;top:${y}px;width:${CELL_W}px">`;
+    html += `<div class="region-name">${r.name}</div>`;
+    html += '<div class="seat-grid" style="grid-template-columns:repeat(' + r.cols + ',26px)">';
+    for (let i = 0; i < r.rows; i++) {
+      for (let j = 0; j < r.cols; j++) {
+        const s = r.seats[i][j];
+        let cls = 'seat';
+        if (s && s.off) cls += ' off';
+        if (me.seatedAt && me.seatedAt.regionId === r.id && me.seatedAt.row === i && me.seatedAt.col === j) cls += ' me';
+        html += `<div class="${cls}"></div>`;
+      }
+    }
+    html += '</div></div>';
+  });
+  inner.innerHTML = html;
+  fitMap(totalW, totalH);
+}
+
+// 缩放和平移
+let scale = 1, tx = 0, ty = 0;
+function applyTransform() {
+  document.getElementById('mapInner').style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
+}
+function fitMap(w, h) {
+  const wrap = document.getElementById('mapWrap');
+  const sw = wrap.clientWidth, sh = wrap.clientHeight;
+  scale = Math.min(sw / w, sh / h, 1.5);
+  tx = (sw - w * scale) / 2;
+  ty = (sh - h * scale) / 2;
+  applyTransform();
+}
+(function initGesture() {
+  const wrap = document.getElementById('mapWrap');
+  let startDist = 0, startScale = 1;
+  let startX = 0, startY = 0, lastTx = 0, lastTy = 0;
+  wrap.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      startScale = scale;
+    } else if (e.touches.length === 1) {
+      startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+      lastTx = tx; lastTy = ty;
+    }
+  }, {passive: false});
+  wrap.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 2) {
+      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      scale = Math.max(0.3, Math.min(3, startScale * d / startDist));
+    } else if (e.touches.length === 1) {
+      tx = lastTx + (e.touches[0].clientX - startX);
+      ty = lastTy + (e.touches[0].clientY - startY);
+    }
+    applyTransform();
+  }, {passive: false});
+  // 鼠标滚轮缩放（桌面测试用）
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    scale = Math.max(0.3, Math.min(3, scale * (e.deltaY < 0 ? 1.1 : 0.9)));
+    applyTransform();
+  }, {passive: false});
+})();
+
+document.getElementById('phoneInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') querySeat();
+});
+</script>
+</body>
+</html>
