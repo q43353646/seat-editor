@@ -445,19 +445,21 @@ table.person-table tbody tr.selected { background: var(--primary-light); }
       </div>
     </div>
     </div>
-    <div id="rightTabAuto" style="display:none">
-      <div class="panel">
-        <div class="panel-head">自动排座设置</div>
-        <div class="panel-body" style="padding:12px">
-          <div class="form-row"><label>座次方式</label>
-            <select id="seatMode">
-              <option value="center">中间为主</option>
-              <option value="left">左侧为主</option>
-            </select>
-          </div>
-          <div style="display:flex;gap:12px;margin-bottom:12px">
-            <div class="form-row" style="flex:1"><label>计算时间(秒)</label><input id="calcTime" type="number" value="20" style="width:70px"></div>
-            <div class="form-row" style="flex:1"><label>线程数 <span id="maxThreadsTip" style="font-size:10px;color:var(--text-2);font-weight:400"></span></label><input id="threadNum" type="number" value="2" style="width:70px"></div>
+    <div id="rightTabAuto" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden">
+      <div class="panel" style="flex-shrink:0">
+        <div class="panel-head" style="cursor:pointer;user-select:none" onclick="toggleAutoSettings()">
+          自动排座设置 <span id="autoSettingsToggle" style="margin-left:auto;font-weight:400">▼</span>
+        </div>
+        <div id="autoSettingsBody" class="panel-body" style="padding:12px">
+          <div style="display:flex;gap:8px;margin-bottom:12px;align-items:flex-end">
+            <div class="form-row" style="flex:2;margin-bottom:0"><label>座次方式</label>
+              <select id="seatMode">
+                <option value="center">中间为主</option>
+                <option value="left">左侧为主</option>
+              </select>
+            </div>
+            <div class="form-row" style="flex:1;margin-bottom:0"><label>时间(秒)</label><input id="calcTime" type="number" value="20" style="width:100%"></div>
+            <div class="form-row" style="flex:1;margin-bottom:0"><label>线程 <span id="maxThreadsTip" style="font-size:10px;color:var(--text-2);font-weight:400"></span></label><input id="threadNum" type="number" value="2" style="width:100%"></div>
           </div>
           <div style="font-size:11px;color:var(--text-2);margin-bottom:8px">性质优先级（数字越小越优先）</div>
           <div id="naturePriorityList" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-bottom:12px"></div>
@@ -470,24 +472,24 @@ table.person-table tbody tr.selected { background: var(--primary-light); }
             <input type="checkbox" id="limitRegionChk" onchange="document.getElementById('regionLimitBtn').disabled=!this.checked">
             <button class="btn btn-sm" id="regionLimitBtn" disabled onclick="openRegionLimitModal()">限定设置</button>
           </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-primary" style="flex:1" onclick="startAutoSeat()">开始自动排座</button>
-            <button class="btn btn-danger" id="stopAutoBtn" style="flex:1;display:none" onclick="stopAutoSeat()">停止</button>
-          </div>
+        </div>
+        <div style="padding:0 12px 12px;display:flex;gap:8px">
+          <button class="btn btn-primary" style="flex:1" onclick="startAutoSeat()">开始自动排座</button>
+          <button class="btn btn-danger" id="stopAutoBtn" style="flex:1;display:none" onclick="stopAutoSeat()">停止</button>
         </div>
       </div>
-      <div class="panel" style="margin-top:10px">
+      <div class="panel" style="margin-top:10px;flex:1;display:flex;flex-direction:column;min-height:0">
         <div class="panel-head">排座日志</div>
-        <div class="panel-body" style="padding:12px">
-          <div style="margin-bottom:8px">
+        <div class="panel-body" style="padding:12px;display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden">
+          <div style="margin-bottom:8px;flex-shrink:0">
             <div style="font-size:12px;margin-bottom:4px">计算进度</div>
             <div style="background:#E5E6EB;border-radius:4px;height:8px;overflow:hidden">
               <div id="progressBar" style="background:var(--primary);height:100%;width:0%;transition:width .2s"></div>
             </div>
             <div id="progressText" style="font-size:11px;color:var(--text-2);margin-top:4px">等待开始</div>
           </div>
-          <div id="autoLog" style="font-size:11px;color:var(--text-2);max-height:200px;overflow-y:auto"></div>
-          <div style="margin-top:10px">
+          <div id="autoLog" style="font-size:11px;color:var(--text-2);flex:1;min-height:0;overflow-y:auto;margin-bottom:8px"></div>
+          <div style="flex-shrink:0">
             <div style="font-size:11px;margin-bottom:4px">历史最优 <span id="bestCount" style="color:var(--primary)">0</span> 次修复</div>
             <input type="range" id="bestSlider" min="0" max="0" value="0" style="width:100%" oninput="previewBest(this.value)">
             <div id="bestInfo" style="font-size:11px;color:var(--text-2)">暂无最优解</div>
@@ -1788,6 +1790,8 @@ function toast(msg) {
 function showTooltip(e, p, seatId) {
   const tip = document.getElementById('tooltip');
   tip.innerHTML = `<div class="t-name">${esc(p.name)}</div>
+    <div>性质：${esc(p.nature||'-')}</div>
+    <div>集团：${esc(p.group||'-')}</div>
     <div>公司：${esc(p.company)}</div>
     <div>职位：${esc(p.title||'-')}</div>
     <div>手机：${esc(p.phone||'-')}</div>
@@ -2348,7 +2352,7 @@ let regionLimitConfig = {}; // regionId -> [允许的性质数组]
 function switchRightTab(tab) {
   document.querySelectorAll('.panel-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.getElementById('rightTabPeople').style.display = tab === 'people' ? 'flex' : 'none';
-  document.getElementById('rightTabAuto').style.display = tab === 'auto' ? 'block' : 'none';
+  document.getElementById('rightTabAuto').style.display = tab === 'auto' ? 'flex' : 'none';
   if (tab === 'auto') {
     renderNaturePriority();
     const maxT = navigator.hardwareConcurrency || 4;
@@ -2537,6 +2541,18 @@ function calcCost(assign) {
 
 let autoSeatStop = false;
 function stopAutoSeat() { autoSeatStop = true; }
+function toggleNaturePriority() {}
+function toggleAutoSettings() {
+  const body = document.getElementById('autoSettingsBody');
+  const toggle = document.getElementById('autoSettingsToggle');
+  if (body.style.display === 'none') {
+    body.style.display = '';
+    toggle.textContent = '▼';
+  } else {
+    body.style.display = 'none';
+    toggle.textContent = '▶';
+  }
+}
 async function startAutoSeat() {
   confirmDialog('自动排座', '将清空当前所有入座并重新排座，确定？', async () => {
     closeModal('confirmModal'); // 立即关闭确认弹窗
