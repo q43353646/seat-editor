@@ -1,0 +1,169 @@
+{
+  "src": "D:\\桌面储存\\座位编辑系统\\座位编辑系统.html",
+  "url": "file:///D:/%E6%A1%8C%E9%9D%A2%E5%82%A8%E5%AD%98/%E5%BA%A7%E4%BD%8D%E7%BC%96%E8%BE%91%E7%B3%BB%E7%BB%9F/%E5%BA%A7%E4%BD%8D%E7%BC%96%E8%BE%91%E7%B3%BB%E7%BB%9F.html",
+  "outdir": "D:\\桌面储存\\座位编辑系统\\_shots",
+  "include": [
+    "lint",
+    "screenshots",
+    "structure"
+  ],
+  "shots": {},
+  "engine": "chrome_cli",
+  "chromiumExec": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "error": {
+    "code": "no_browser",
+    "message": "chrome CLI 超时 (30s)：C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\nCDP 分支先前错误：等待 devtools 端点超时 (8s)：<urlopen error timed out>"
+  },
+  "elapsedSec": 98.61,
+  "schemaVersion": 2,
+  "status": "tool_error",
+  "engineInfo": {
+    "name": "chrome_cli",
+    "degraded": false,
+    "degradedReasons": []
+  },
+  "input": {
+    "original": "D:\\桌面储存\\座位编辑系统\\座位编辑系统.html",
+    "resolvedPath": "D:\\桌面储存\\座位编辑系统\\座位编辑系统.html",
+    "baseUrl": "file:///D:/%E6%A1%8C%E9%9D%A2%E5%82%A8%E5%AD%98/%E5%BA%A7%E4%BD%8D%E7%BC%96%E8%BE%91%E7%B3%BB%E7%BB%9F/%E5%BA%A7%E4%BD%8D%E7%BC%96%E8%BE%91%E7%B3%BB%E7%BB%9F.html",
+    "protocol": "file",
+    "cwd": "D:\\桌面储存\\座位编辑系统",
+    "mediaMode": {
+      "reducedMotion": true
+    }
+  },
+  "artifacts": {
+    "screenshots": []
+  },
+  "summary": {
+    "blocker": 0,
+    "error": 0,
+    "warning": 0,
+    "info": 0
+  },
+  "findings": [],
+  "notRunChecks": [
+    {
+      "check": "captureWritten",
+      "reason": "capture_failed"
+    },
+    {
+      "check": "visualCoverage",
+      "reason": "capture_incomplete_or_truncated"
+    },
+    {
+      "ruleId": "consoleErrors",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "consoleWarnings",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "resourceErrors",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "horizontalOverflow",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "misalignedBlocks",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "unevenColumns",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "pseudoOverflow",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "orphanCardsWarning",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "squeezedTableColumns",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "fakeDisclosureBulletsWarning",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "edgeHuggingTextWarning",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "fixedWidthElementsWarning",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "timelineAlignmentIssues",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "timelineBrokenAxis",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "timelineDeadDotStyle",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "chartBadValues",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "chartHtmlInCanvasText",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "responsiveChartIssues",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "duplicateImagesWarning",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "stretchedImages",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "localImageWarnings",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "publishBrokenAssets",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "unsafeHrefRefsWarning",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "emojiUsageWarning",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "mobileFontIssues",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "textContrastIssues",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "invisibleAnimationsWarning",
+      "reason": "dom_report_unavailable"
+    },
+    {
+      "ruleId": "deadButtons",
+      "reason": "dom_report_unavailable"
+    }
+  ],
+  "prioritizedActions": [],
+  "reportPath": "D:\\桌面储存\\座位编辑系统\\_shots\\report.json"
+}
